@@ -1,0 +1,14 @@
+{
+  "name": "opencode-v2-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Collection of OpenCode V2 plugins.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace opencode-desktop-metrics",
+    "typecheck": "npm run typecheck --workspace opencode-desktop-metrics"
+  }
+}
