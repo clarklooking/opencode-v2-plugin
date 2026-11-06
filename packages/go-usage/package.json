@@ -1,0 +1,43 @@
+{
+  "name": "go-usage",
+  "version": "0.1.0",
+  "description": "OpenCode Desktop plugin that shows OpenCode Go subscription usage (5h, weekly, monthly) in the window footer.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clarklooking/opencode-v2-plugin.git",
+    "directory": "packages/go-usage"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "desktop",
+    "go",
+    "usage",
+    "quota"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./rpc": "./src/rpc.ts",
+    "./gui-experimental": "./dist/gui-experimental.cjs"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.2.5"
+  },
+  "devDependencies": {
+    "solid-js": "^1.9.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.0.0",
+    "vite-plugin-solid": "^2.11.0"
+  }
+}

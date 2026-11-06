@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Go 底部面板 · 原型</title>
+    <style>
+      :root {
+        --page: #f3f3f0;
+        --frame: #fbfbfa;
+        --line: #ececea;
+        --text: #1e1e1c;
+        --muted: #8b8f89;
+        --faint: #b3b7b0;
+        --green: #2f9e6b;
+        --green-deep: #247a53;
+        --green-soft: #eaf6ef;
+        --track: #e7e9e5;
+        --shadow: 0 18px 48px rgba(28, 32, 27, 0.14), 0 2px 8px rgba(28, 32, 27, 0.06);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei",
+          "Noto Sans SC", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        padding: 38px 42px 60px;
+      }
+
+      .page-head {
+        max-width: 1040px;
+        margin: 0 auto 28px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .sub {
+        margin: 8px 0 0;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .toggle {
+        border: 1px solid var(--line);
+        background: var(--frame);
+        color: var(--muted);
+        font: inherit;
+        font-size: 11px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .toggle:hover {
+        color: var(--text);
+        border-color: #d9dbd5;
+      }
+
+      .stack {
+        max-width: 1040px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+      }
+
+      .item {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+
+      .item-head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 7px;
+        background: #1f211e;
+        color: #fff;
+        font-size: 10.5px;
+        font-weight: 600;
+        flex: none;
+      }
+
+      .badge.star {
+        background: var(--green-soft);
+        color: var(--green-deep);
+        font-size: 12px;
+      }
+
+      .item-head h2 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .item-head p {
+        margin: 0;
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+
+      .frame {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--frame);
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(20, 24, 19, 0.03);
+      }
+
+      .mock {
+        padding: 18px 20px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background:
+          radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.9), transparent 55%),
+          var(--frame);
+      }
+
+      .ghost {
+        height: 7px;
+        border-radius: 999px;
+        background: #eeefeb;
+      }
+
+      .ghost.title {
+        width: 180px;
+        height: 9px;
+        background: #e6e7e2;
+      }
+
+      .ghost.w40 {
+        width: 40%;
+      }
+
+      .ghost.w62 {
+        width: 62%;
+      }
+
+      .composer {
+        margin-top: 2px;
+        height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .send {
+        width: 20px;
+        height: 20px;
+        border-radius: 7px;
+        background: #1f211e;
+      }
+
+      .footer {
+        height: 34px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: #fcfcfb;
+      }
+
+      /* ---------- A · 余量胶囊 ---------- */
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        height: 24px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+        transition:
+          background-color 140ms ease,
+          transform 140ms ease;
+      }
+
+      .pill:hover {
+        background: #f1f2ee;
+      }
+
+      .pill-wide {
+        gap: 10px;
+      }
+
+      .ribbon.ribbon-wide {
+        width: 190px;
+        height: 6px;
+      }
+
+      .pill:active {
+        transform: scale(0.995);
+      }
+
+      .brand {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.045em;
+        color: #6c716a;
+      }
+
+      .divider {
+        width: 1px;
+        height: 11px;
+        background: #e3e5e0;
+        flex: none;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--green-deep);
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #46b47c;
+        box-shadow: 0 0 0 3px rgba(70, 180, 124, 0.12);
+        flex: none;
+      }
+
+      .track {
+        width: 84px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--track);
+        overflow: hidden;
+        flex: none;
+      }
+
+      .track > i {
+        display: block;
+        height: 100%;
+        width: 96%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #8ed8ab, #38a873);
+      }
+
+      .num {
+        font-size: 10.5px;
+        font-variant-numeric: tabular-nums;
+        color: #6e736c;
+        white-space: nowrap;
+      }
+
+      .reset {
+        font-size: 10px;
+        color: var(--faint);
+        white-space: nowrap;
+      }
+
+      .chev {
+        color: #b9bdb6;
+        font-size: 13px;
+        line-height: 1;
+        margin-left: -2px;
+      }
+
+      /* ---------- B · 三段电量 ---------- */
+
+      .seeds {
+        display: inline-flex;
+        align-items: center;
+        gap: 15px;
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 999px;
+        cursor: default;
+      }
+
+      .mono {
+        width: 22px;
+        height: 22px;
+        border-radius: 8px;
+        background: var(--green-soft);
+        color: var(--green-deep);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .seed {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        cursor: default;
+      }
+
+      .seed svg {
+        width: 18px;
+        height: 18px;
+        transform: rotate(-90deg);
+      }
+
+      .seed .ring-track {
+        fill: none;
+        stroke: #e7e9e5;
+        stroke-width: 2.4;
+      }
+
+      .seed .ring-value {
+        fill: none;
+        stroke: #4bb27e;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        transition: stroke-width 140ms ease;
+      }
+
+      .seed:hover .ring-value {
+        stroke-width: 3.1;
+      }
+
+      .seed-text {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        font-size: 10.5px;
+      }
+
+      .seed-text b {
+        font-weight: 500;
+        color: #7d827b;
+      }
+
+      .seed-text em {
+        font-style: normal;
+        font-variant-numeric: tabular-nums;
+        color: #555a54;
+      }
+
+      .tag {
+        font-size: 9.5px;
+        color: var(--green-deep);
+        background: var(--green-soft);
+        border-radius: 999px;
+        padding: 3px 7px;
+        line-height: 1;
+      }
+
+      /* ---------- C · 一条地平线 ---------- */
+
+      .horizon {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        height: 26px;
+        padding: 0 9px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .horizon:hover {
+        background: #f1f2ee;
+      }
+
+      .leaf {
+        color: #59b383;
+        display: inline-flex;
+        flex: none;
+      }
+
+      .horizon-copy {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .horizon-copy b {
+        font-size: 11px;
+        font-weight: 500;
+        color: #3b403a;
+      }
+
+      .horizon-copy em {
+        font-style: normal;
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      .ribbon {
+        position: relative;
+        width: 240px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--track);
+        overflow: hidden;
+        flex: none;
+      }
+
+      .ribbon > i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 96%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #a9e3be 0%, #5bc28d 55%, #2f9e6b 100%);
+      }
+
+      .ribbon > i::after {
+        content: "";
+        position: absolute;
+        right: 1px;
+        top: 50%;
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: #fff;
+        opacity: 0.85;
+        transform: translateY(-50%);
+        box-shadow: 0 0 6px rgba(47, 158, 107, 0.45);
+      }
+
+      .ribbon-num {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 7.5px;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .micro {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 9.5px;
+        color: #a0a49d;
+        white-space: nowrap;
+      }
+
+      .micro s {
+        width: 3px;
+        height: 3px;
+        border-radius: 999px;
+        background: #d3d6d0;
+        text-decoration: none;
+      }
+
+      /* ---------- 详情卡 ---------- */
+
+      .peek {
+        position: relative;
+      }
+
+      .peek .footer {
+        justify-content: center;
+      }
+
+      .popover {
+        position: absolute;
+        left: 50%;
+        bottom: 38px;
+        width: 318px;
+        transform: translateX(-50%);
+        border: 1px solid #e7e8e3;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: var(--shadow);
+        padding: 14px 15px 12px;
+      }
+
+      .pop-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 13px;
+      }
+
+      .pop-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .pop-title .dot {
+        width: 7px;
+        height: 7px;
+      }
+
+      .pop-sub {
+        font-size: 10px;
+        color: var(--faint);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 44px 1fr 34px 82px;
+        align-items: center;
+        gap: 9px;
+        height: 27px;
+        font-size: 10.5px;
+      }
+
+      .row-label {
+        color: #767b74;
+      }
+
+      .row-track {
+        height: 5px;
+        border-radius: 999px;
+        background: #eef0ec;
+        overflow: hidden;
+      }
+
+      .row-track > i {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #a6e1bd, #3ea977);
+      }
+
+      .row-num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: #4d524c;
+      }
+
+      .row-reset {
+        text-align: right;
+        color: #b0b4ad;
+        font-size: 9.5px;
+      }
+
+      .pop-foot {
+        margin-top: 11px;
+        padding-top: 10px;
+        border-top: 1px solid #f0f1ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9.5px;
+        color: #a6aaa3;
+      }
+
+      .pop-link {
+        color: var(--green-deep);
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .capsule-a {
+        transform: translateX(28px);
+      }
+
+      /* ---------- 深色 ---------- */
+
+      .dark {
+        --frame: #1d1e1c;
+        --line: #2c2d2a;
+        --text: #e9e9e5;
+        --muted: #9b9f97;
+        --faint: #6f746c;
+        --green: #6fcf97;
+        --green-deep: #8adfa9;
+        --green-soft: #22332a;
+        --track: #343632;
+      }
+
+      .dark .mock {
+        background:
+          radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.035), transparent 55%),
+          var(--frame);
+      }
+
+      .dark .ghost {
+        background: #2a2b28;
+      }
+
+      .dark .ghost.title {
+        background: #33342f;
+      }
+
+      .dark .composer {
+        background: #232421;
+        border-color: #30312d;
+      }
+
+      .dark .send {
+        background: #e9e9e5;
+      }
+
+      .dark .footer {
+        background: #1f201e;
+      }
+
+      .dark .pill:hover,
+      .dark .horizon:hover {
+        background: #292a27;
+      }
+
+      .dark .brand {
+        color: #a8aca4;
+      }
+
+      .dark .divider {
+        background: #373935;
+      }
+
+      .dark .num {
+        color: #b7bbb3;
+      }
+
+      .dark .chev {
+        color: #5c615a;
+      }
+
+      .dark .popover {
+        background: #252623;
+        border-color: #343531;
+      }
+
+      .dark .pop-title {
+        color: #ededE9;
+      }
+
+      .dark .row-track {
+        background: #333531;
+      }
+
+      .dark .row-num {
+        color: #d4d7d0;
+      }
+
+      .dark .pop-foot {
+        border-color: #32332f;
+      }
+
+      .note {
+        max-width: 1040px;
+        margin: 26px auto 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .note div {
+        border: 1px solid var(--line);
+        background: var(--frame);
+        border-radius: 12px;
+        padding: 13px 14px;
+      }
+
+      .note h3 {
+        margin: 0 0 5px;
+        font-size: 11.5px;
+        font-weight: 600;
+      }
+
+      .note p {
+        margin: 0;
+        font-size: 11px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">OpenCode Go · Footer Prototype</p>
+        <h1>底部额度面板的 3 个方向 + 推荐组合</h1>
+        <p class="sub">
+          目标：简洁、克制，但一眼看出“额度还很充裕”。默认只露一句状态和一条余量，
+          精确数字与重置时间收进悬停/详情。<br />
+          1:1 实际尺寸，可直接把鼠标移到面板上。
+        </p>
+      </div>
+      <button class="toggle" id="toggle">切换深色</button>
+    </header>
+
+    <main class="stack">
+      <section class="item">
+        <div class="item-head">
+          <span class="badge star">★</span>
+          <h2>推荐 · 余量胶囊 × 一条地平线</h2>
+          <p>一句状态 + 一条完整余量条；默认不展示 5h / 周，收起细节。</p>
+        </div>
+        <div class="frame">
+          <div class="mock">
+            <div class="ghost title"></div>
+            <div class="ghost w62"></div>
+            <div class="ghost w40"></div>
+            <div class="composer">
+              <span>添加后续消息，输入 / 使用命令，输入 @ 添加上下文…</span>
+              <span class="send"></span>
+            </div>
+          </div>
+          <div class="footer">
+            <button class="pill pill-wide">
+              <span class="brand">Go</span>
+              <span class="divider"></span>
+              <span class="status"><i class="dot"></i>本月额度充裕</span>
+              <span class="ribbon ribbon-wide"><i></i></span>
+              <span class="num">剩余 96%</span>
+              <span class="divider"></span>
+              <span class="reset">20 天后重置</span>
+              <span class="chev">›</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="item">
+        <div class="item-head">
+          <span class="badge">A</span>
+          <h2>余量胶囊</h2>
+          <p>一句“本月额度充裕” + 一条余量条；最安静，适合常驻。</p>
+        </div>
+        <div class="frame">
+          <div class="mock">
+            <div class="ghost title"></div>
+            <div class="ghost w62"></div>
+            <div class="ghost w40"></div>
+            <div class="composer">
+              <span>添加后续消息，输入 / 使用命令，输入 @ 添加上下文…</span>
+              <span class="send"></span>
+            </div>
+          </div>
+          <div class="footer">
+            <button class="pill">
+              <span class="brand">Go</span>
+              <span class="divider"></span>
+              <span class="status"><i class="dot"></i>本月额度充裕</span>
+              <span class="track"><i></i></span>
+              <span class="num">剩余 96%</span>
+              <span class="divider"></span>
+              <span class="reset">20 天后重置</span>
+              <span class="chev">›</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="item">
+        <div class="item-head">
+          <span class="badge">B</span>
+          <h2>三段电量</h2>
+          <p>三个小圆环对应 5 小时 / 周 / 月；信息密度高但仍然轻。</p>
+        </div>
+        <div class="frame">
+          <div class="mock">
+            <div class="ghost title"></div>
+            <div class="ghost w62"></div>
+            <div class="ghost w40"></div>
+            <div class="composer">
+              <span>添加后续消息，输入 / 使用命令，输入 @ 添加上下文…</span>
+              <span class="send"></span>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="seeds">
+              <span class="mono">GO</span>
+              <span class="seed" title="5 小时 · 2 小时后重置">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <circle class="ring-track" cx="10" cy="10" r="7.4"></circle>
+                  <circle
+                    class="ring-value"
+                    cx="10"
+                    cy="10"
+                    r="7.4"
+                    stroke-dasharray="46.5"
+                    stroke-dashoffset="0.465"
+                  ></circle>
+                </svg>
+                <span class="seed-text"><b>5h</b><em>99%</em></span>
+              </span>
+              <span class="seed" title="本周 · 3 天后重置">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <circle class="ring-track" cx="10" cy="10" r="7.4"></circle>
+                  <circle
+                    class="ring-value"
+                    cx="10"
+                    cy="10"
+                    r="7.4"
+                    stroke-dasharray="46.5"
+                    stroke-dashoffset="3.255"
+                  ></circle>
+                </svg>
+                <span class="seed-text"><b>周</b><em>93%</em></span>
+              </span>
+              <span class="seed" title="本月 · 20 天后重置">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <circle class="ring-track" cx="10" cy="10" r="7.4"></circle>
+                  <circle
+                    class="ring-value"
+                    cx="10"
+                    cy="10"
+                    r="7.4"
+                    stroke-dasharray="46.5"
+                    stroke-dashoffset="1.86"
+                  ></circle>
+                </svg>
+                <span class="seed-text"><b>月</b><em>96%</em></span>
+              </span>
+              <span class="tag">充裕</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="item">
+        <div class="item-head">
+          <span class="badge">C</span>
+          <h2>一条地平线</h2>
+          <p>把“余量”做成一条完整的长条；最直观地显得充裕。</p>
+        </div>
+        <div class="frame">
+          <div class="mock">
+            <div class="ghost title"></div>
+            <div class="ghost w62"></div>
+            <div class="ghost w40"></div>
+            <div class="composer">
+              <span>添加后续消息，输入 / 使用命令，输入 @ 添加上下文…</span>
+              <span class="send"></span>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="horizon">
+              <span class="leaf">
+                <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M13.6 2.4C8.1 2.4 3.4 5 3.4 9.9c0 1.7.9 3.1 2.4 3.8 2.1-3.6 4.7-5.8 7.4-6.8-2.1 1.9-3.9 4.2-4.9 7 4.1-.3 6.3-3.4 6.3-7.6 0-1.6-.3-2.9-1-3.9Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+              <span class="horizon-copy"><b>本月额度充足</b><em>还剩 96%</em></span>
+              <span class="ribbon"><i></i></span>
+              <span class="micro">5h 与周均充裕</span>
+              <span class="reset">20 天后重置</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="item">
+        <div class="item-head">
+          <span class="badge">A+</span>
+          <h2>点击后的详情（以 A 为例）</h2>
+          <p>三行进度、剩余比例和重置倒计时；不打断当前会话。</p>
+        </div>
+        <div class="frame peek">
+          <div class="mock">
+            <div class="ghost title"></div>
+            <div class="ghost w62"></div>
+            <div class="ghost w40"></div>
+            <div class="composer">
+              <span>添加后续消息，输入 / 使用命令，输入 @ 添加上下文…</span>
+              <span class="send"></span>
+            </div>
+          </div>
+          <div class="popover">
+            <div class="pop-head">
+              <span class="pop-title"><i class="dot"></i>OpenCode Go</span>
+              <span class="pop-sub">额度充裕</span>
+            </div>
+            <div class="row">
+              <span class="row-label">本月</span>
+              <span class="row-track"><i style="width: 96%"></i></span>
+              <span class="row-num">96%</span>
+              <span class="row-reset">20 天后重置</span>
+            </div>
+            <div class="row">
+              <span class="row-label">本周</span>
+              <span class="row-track"><i style="width: 93%"></i></span>
+              <span class="row-num">93%</span>
+              <span class="row-reset">3 天后重置</span>
+            </div>
+            <div class="row">
+              <span class="row-label">5 小时</span>
+              <span class="row-track"><i style="width: 99%"></i></span>
+              <span class="row-num">99%</span>
+              <span class="row-reset">2 小时后重置</span>
+            </div>
+            <div class="pop-foot">
+              <span>剩余比例，不是已用</span>
+              <span class="pop-link">在 Console 查看 →</span>
+            </div>
+          </div>
+          <div class="footer">
+            <button class="pill">
+              <span class="brand">Go</span>
+              <span class="divider"></span>
+              <span class="status"><i class="dot"></i>本月额度充裕</span>
+              <span class="track"><i></i></span>
+              <span class="num">剩余 96%</span>
+              <span class="divider"></span>
+              <span class="reset">20 天后重置</span>
+              <span class="chev">›</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="note">
+      <div>
+        <h3>文案跟随余量</h3>
+        <p>≥60% 额度充裕 · 30–60% 用量平稳 · 10–30% 注意用量 · &lt;10% 接近上限</p>
+      </div>
+      <div>
+        <h3>颜色只做提示</h3>
+        <p>绿色表示健康，琥珀/红色只在余量低时出现；不制造焦虑。</p>
+      </div>
+      <div>
+        <h3>数字退居二线</h3>
+        <p>默认只保留一个主数字；5h 与周是辅指标，详情里再展开。</p>
+      </div>
+    </div>
+
+    <script>
+      const toggle = document.getElementById("toggle");
+      toggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        toggle.textContent = document.body.classList.contains("dark") ? "切换浅色" : "切换深色";
+      });
+    </script>
+  </body>
+</html>

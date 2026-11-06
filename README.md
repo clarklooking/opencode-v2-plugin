@@ -7,6 +7,7 @@ OpenCode V2 插件集合 / A small collection of OpenCode V2 plugins.
 | 插件 | 简介 |
 | --- | --- |
 | [`desktop-metrics`](./packages/desktop-metrics) | 在 OpenCode Desktop 会话标题栏显示每次回复的生成速度（t/s）和首 token 延迟（TTFT），悬停可查看 token 明细、生成耗时、花费与模型。 |
+| [`go-usage`](./packages/go-usage) | 在 OpenCode Desktop 窗口底部显示 OpenCode Go 订阅额度（5 小时 / 本周 / 本月），点击查看详情与重置时间。 |
 
 ## 安装 desktop-metrics
 
@@ -37,6 +38,23 @@ opencode plugin remove opencode-desktop-metrics
 
 然后把对应条目从 `opencode.json(c)` 中删除。
 
+## 安装 go-usage
+
+```sh
+opencode plugin add 'github:clarklooking/opencode-v2-plugin#main::path:packages/go-usage'
+```
+
+本地目录方式：
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["E:/workspace/opencode-v2-plugin/packages/go-usage"]
+}
+```
+
+> `go-usage` 的插件 id 是 `go-usage`。如果本机已经通过 `file:///.../plugins/go-usage` 注册过同名插件，请先移除旧条目，再启用仓库版本。
+
 ## 使用效果
 
 每次助手回复结束后，会话标题栏（时间线标题行）会出现一行小字：
@@ -66,10 +84,17 @@ opencode plugin remove opencode-desktop-metrics
 opencode-v2-plugin/
 ├─ package.json                 # npm workspaces 根配置
 ├─ packages/
-│  └─ desktop-metrics/
-│     ├─ src/gui.tsx            # 插件源码（Solid + GUI plugin SDK）
+│  ├─ desktop-metrics/
+│  │  ├─ src/gui.tsx            # t/s + TTFT 徽标
+│  │  ├─ dist/gui-experimental.cjs
+│  │  ├─ vite.config.ts
+│  │  └─ package.json
+│  └─ go-usage/
+│     ├─ src/index.ts           # 服务端：读取凭证、请求上游、RPC
+│     ├─ src/rpc.ts
+│     ├─ src/gui.tsx            # 底部额度条 + 详情
 │     ├─ dist/gui-experimental.cjs
-│     ├─ vite.config.ts
+│     ├─ prototypes/            # 设计原型
 │     └─ package.json
 └─ README.md
 ```
